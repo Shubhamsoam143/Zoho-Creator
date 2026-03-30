@@ -19,6 +19,19 @@ if(!isEmpty(input.Visitor_Photo) || !isBlank(input.Visitor_Photo))
 		rec_ID = temp_rec;
 		
     }
+/*
+    image = image.getprefix("\" lowqual");
+    image = image.getsuffix("<img src = \"https://creatorexport.zoho.com/sharedBy/appLinkName/viewLinkName/fieldName/image/");
+    sendmail
+    [
+        from :zoho.loginuserid
+        to :"shubham.soam@meydanfz.ae"
+        subject :"Visitor Image"
+        message :"Please check the attachment"
+        Attachments :file:image
+    ]
+*/
+
 	pageList = List();
 	chunk = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 	dummy = chunk + chunk + chunk + chunk + chunk + chunk + chunk + chunk + chunk + chunk;
