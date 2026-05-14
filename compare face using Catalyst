@@ -1,0 +1,83 @@
+if(!isEmpty(input.Visitor_Photo) || !isBlank(input.Visitor_Photo))
+{
+	if(Status == "CHECK-OUT")
+	{
+		// fetch records (Don't remove this code though it is not making sense, it's just been used to buy some time - Shubham)
+		if(input.Temp_RecordID != "" && !isBlank(input.Temp_RecordID))
+		{
+			query_file = invokeurl
+			[
+				url :"https://www.zohoapis.com/creator/v2.1/data/meydanfreezone/visitor-management/report/All_Temp_Images/" + input.Temp_RecordID + "/Temp_Photo/download"
+				type :GET
+				connection:"zoho_oauth"
+			];
+// 			info query_file;
+			query_file.setParamName("query_image");
+			client_id = "";
+			client_secret = "";
+			refresh_token = "";
+			response = invokeurl
+			[
+				url :"https://accounts.zoho.com/oauth/v2/token"
+				type :POST
+				parameters:{"refresh_token":refresh_token,"client_id":client_id,"client_secret":client_secret,"grant_type":"refresh_token"}
+			];
+			// info response;
+			access_token = response.get("access_token");
+			start_time = zoho.currentdate + " " + "00:00:00";
+			end_time = zoho.currentdate + " " + "23:59:59";
+			query_records = Add_Visitor[Entry_Date_and_Time >= start_time && Entry_Date_and_Time <= end_time && Status == "CHECK-IN" && Exit_Date_and_Time == null];
+			info query_records;
+			max_confidence = 0.0;
+			needed_id = null;
+			for each  rec in query_records
+			{
+				source_file = invokeurl
+				[
+					url :"https://www.zohoapis.com/creator/v2.1/data/meydanfreezone/visitor-management/report/All_Visitors/" + rec.ID + "/Visitor_Photo/download"
+					type :GET
+					connection:"zoho_oauth"
+				];
+				// 		info source_file;
+				source_file.setParamName("source_image");
+				resp = invokeurl
+				[
+					url :"https://api.catalyst.zoho.com/baas/v1/project/60043000000012100/ml/facecomparison"
+					type :POST
+					headers:{"Authorization":"Zoho-oauthtoken " + access_token}
+					files:{source_file,query_file}
+				];
+				info resp;
+				// Extract confidence
+				if(resp.get("status") == "success" && resp.get("data") != null)
+				{
+					confidence = ifnull(resp.get("data").get("confidence"),0.0);
+					if(confidence > max_confidence)
+					{
+						max_confidence = confidence;
+						needed_id = rec.ID;
+					}
+				}
+			}
+			// 			required data
+			if(needed_id != null)
+			{
+				final_rec = Add_Visitor[ID == needed_id.toLong()];
+				input.Name.first_name = final_rec.Name.first_name;
+				input.Name.last_name = final_rec.Name.last_name;
+				input.Phone_Number = final_rec.Phone_Number;
+				image = final_rec.ID_Proof;
+				image = image.getprefix("\" lowqual");
+				image = image.getsuffix("<img src = \"https://creatorexport.zoho.com/sharedBy/appLinkName/viewLinkName/fieldName/image/");
+				input.ID_Proof = image;
+				input.Visit_Type = final_rec.Visit_Type;
+				input.Entry_Date_and_Time = final_rec.Entry_Date_and_Time;
+				input.Exit_Date_and_Time = zoho.currenttime;
+			}
+		}
+	}
+}
+else
+{
+	info "Visitor image is not present";
+}
